@@ -35,11 +35,12 @@
   <url>http://zeppelin.incubator.apache.org</url>
   
   <properties>
-    <spark.version>1.4.1</spark.version>
+    <spark.version>1.5.2</spark.version>
     <scala.version>2.10.4</scala.version>
     <scala.binary.version>2.10</scala.binary.version>
 
-    <hadoop.version>2.3.0</hadoop.version>
+    <hadoop.version>2.4.1</hadoop.version>
+    <yarn.version>2.4.1</yarn.version>
     <py4j.version>0.8.2.1</py4j.version>
   </properties>
 

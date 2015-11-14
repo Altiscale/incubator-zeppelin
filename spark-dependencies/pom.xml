@@ -36,19 +36,19 @@
   
 
   <properties>
-    <spark.version>1.4.1</spark.version>
+    <spark.version>1.5.2</spark.version>
     <scala.version>2.10.4</scala.version>
     <scala.binary.version>2.10</scala.binary.version>
 
-    <hadoop.version>2.3.0</hadoop.version>
+    <hadoop.version>2.4.1</hadoop.version>
     <yarn.version>${hadoop.version}</yarn.version>
     <avro.version>1.7.7</avro.version>
     <avro.mapred.classifier />
-    <jets3t.version>0.7.1</jets3t.version>
-    <protobuf.version>2.4.1</protobuf.version>
+    <jets3t.version>0.9.3</jets3t.version>
+    <protobuf.version>2.5.0</protobuf.version>
 
-    <akka.group>org.spark-project.akka</akka.group>
-    <akka.version>2.3.4-spark</akka.version>
+    <akka.group>com.typesafe.akka</akka.group>
+    <akka.version>2.3.11</akka.version>
 
     <spark.download.url>http://archive.apache.org/dist/spark/spark-${spark.version}/spark-${spark.version}.tgz</spark.download.url>
     <py4j.version>0.8.2.1</py4j.version>
@@ -461,7 +461,10 @@
     <profile>
       <id>spark-1.5</id>
       <properties>
-        <spark.version>1.5.1</spark.version>
+        <spark.version>1.5.2</spark.version>
+        <hive.version>1.2.1.spark</hive.version>
+        <!-- Version used for internal directory structure -->
+        <hive.version.short>1.2.1</hive.version.short>
         <akka.group>com.typesafe.akka</akka.group>
         <akka.version>2.3.11</akka.version>
         <protobuf.version>2.5.0</protobuf.version>
@@ -518,7 +521,8 @@
     <profile>
       <id>hadoop-2.4</id>
       <properties>
-        <hadoop.version>2.4.0</hadoop.version>
+        <hadoop.version>2.4.1</hadoop.version>
+        <yarn.version>2.4.1</yarn.version>
         <protobuf.version>2.5.0</protobuf.version>
         <jets3t.version>0.9.3</jets3t.version>
         <avro.mapred.classifier>hadoop2</avro.mapred.classifier>
@@ -529,6 +533,17 @@
       <id>hadoop-2.6</id>
       <properties>
         <hadoop.version>2.6.0</hadoop.version>
+        <protobuf.version>2.5.0</protobuf.version>
+        <jets3t.version>0.9.3</jets3t.version>
+        <avro.mapred.classifier>hadoop2</avro.mapred.classifier>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>hadoop-2.7</id>
+      <properties>
+        <hadoop.version>2.7.1</hadoop.version>
+        <yarn.version>2.7.1</yarn.version>
         <protobuf.version>2.5.0</protobuf.version>
         <jets3t.version>0.9.3</jets3t.version>
         <avro.mapred.classifier>hadoop2</avro.mapred.classifier>
