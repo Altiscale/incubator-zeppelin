@@ -36,6 +36,7 @@
   <properties>
     <hive.hive.version>0.13.1a</hive.hive.version>
     <hive.hadoop.version>2.4.1</hive.hadoop.version>
+    <hive.hive.group>org.spark-project.hive</hive.hive.group>
   </properties>
   <dependencies>
     <dependency>
@@ -62,7 +63,7 @@
     </dependency>
     
     <dependency>
-      <groupId>org.apache.hive</groupId>
+      <groupId>${hive.hive.group}</groupId>
       <artifactId>hive-jdbc</artifactId>
       <version>${hive.hive.version}</version>
     </dependency>
