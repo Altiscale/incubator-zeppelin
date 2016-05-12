@@ -262,7 +262,7 @@ public class DepInterpreter extends Interpreter {
   public List<String> completion(String buf, int cursor) {
     ScalaCompleter c = completor.completer();
     Candidates ret = c.complete(buf, cursor);
-    return scala.collection.JavaConversions.asJavaList(ret.candidates());
+    return scala.collection.JavaConversions.seqAsJavaList(ret.candidates());
   }
 
   private List<File> currentClassPath() {
@@ -299,23 +299,25 @@ public class DepInterpreter extends Interpreter {
     if (intpGroup == null) {
       return null;
     }
-    synchronized (intpGroup) {
-      for (Interpreter intp : intpGroup){
-        if (intp.getClassName().equals(SparkInterpreter.class.getName())) {
-          Interpreter p = intp;
-          while (p instanceof WrappedInterpreter) {
-            p = ((WrappedInterpreter) p).getInnerInterpreter();
-          }
-          return (SparkInterpreter) p;
-        }
-      }
+
+    Interpreter p = getInterpreterInTheSameSessionByClassName(SparkInterpreter.class.getName());
+    if (p == null) {
+      return null;
     }
-    return null;
+
+    while (p instanceof WrappedInterpreter) {
+      p = ((WrappedInterpreter) p).getInnerInterpreter();
+    }
+    return (SparkInterpreter) p;
   }
 
   @Override
   public Scheduler getScheduler() {
-    return getSparkInterpreter().getScheduler();
+    SparkInterpreter sparkInterpreter = getSparkInterpreter();
+    if (sparkInterpreter != null) {
+      return getSparkInterpreter().getScheduler();
+    } else {
+      return null;
+    }
   }
-
 }

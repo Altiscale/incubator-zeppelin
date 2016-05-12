@@ -19,8 +19,8 @@ package org.apache.zeppelin;
 
 
 import com.google.common.base.Function;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
@@ -29,14 +29,19 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static org.openqa.selenium.Keys.ENTER;
+import static org.openqa.selenium.Keys.SHIFT;
 
 abstract public class AbstractZeppelinIT {
   protected WebDriver driver;
 
   protected final static Logger LOG = LoggerFactory.getLogger(AbstractZeppelinIT.class);
+  protected static final long MAX_IMPLICIT_WAIT = 30;
   protected static final long MAX_BROWSER_TIMEOUT_SEC = 30;
   protected static final long MAX_PARAGRAPH_TIMEOUT_SEC = 60;
 
@@ -53,6 +58,19 @@ abstract public class AbstractZeppelinIT {
     if (logOutput) {
       LOG.info("Finished.");
     }
+  }
+
+  protected void setTextOfParagraph(int paragraphNo, String text) {
+    String editorId = driver.findElement(By.xpath(getParagraphXPath(paragraphNo) + "//div[contains(@class, 'editor')]")).getAttribute("id");
+    if (driver instanceof JavascriptExecutor) {
+      ((JavascriptExecutor) driver).executeScript("ace.edit('" + editorId + "'). setValue('" + text + "')");
+    } else {
+      throw new IllegalStateException("This driver does not support JavaScript!");
+    }
+  }
+
+  protected void runParagraph(int paragraphNo) {
+    driver.findElement(By.xpath(getParagraphXPath(paragraphNo) + "//span[@class='icon-control-play']")).click();
   }
 
 
@@ -97,7 +115,7 @@ abstract public class AbstractZeppelinIT {
   }
 
   protected boolean endToEndTestEnabled() {
-    return null != System.getenv("CI");
+    return null != System.getenv("TEST_SELENIUM");
   }
 
   protected void createNewNote() {
@@ -129,6 +147,13 @@ abstract public class AbstractZeppelinIT {
     driver.findElement(By.xpath("//div[@class='modal-dialog'][contains(.,'delete this notebook')]" +
         "//div[@class='modal-footer']//button[contains(.,'OK')]")).click();
     sleep(100, true);
+  }
+
+  protected void handleException(String message, Exception e) throws Exception {
+    LOG.error(message, e);
+    File scrFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+    LOG.error("ScreenShot::\ndata:image/png;base64," + new String(Base64.encodeBase64(FileUtils.readFileToByteArray(scrFile))));
+    throw e;
   }
 
 }

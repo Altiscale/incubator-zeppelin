@@ -22,10 +22,8 @@ import static scala.collection.JavaConversions.asJavaIterable;
 import static scala.collection.JavaConversions.collectionAsScalaIterable;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,8 +47,6 @@ import org.apache.zeppelin.resource.ResourceSet;
 
 import scala.Tuple2;
 import scala.Unit;
-import scala.collection.Iterable;
-import scala.collection.JavaConversions;
 
 /**
  * Spark context for zeppelin.
@@ -90,6 +86,27 @@ public class ZeppelinContext {
 
   public Object select(String name, Object defaultValue,
       scala.collection.Iterable<Tuple2<Object, String>> options) {
+    return gui.select(name, defaultValue, tuplesToParamOptions(options));
+  }
+
+  public scala.collection.Iterable<Object> checkbox(String name,
+      scala.collection.Iterable<Tuple2<Object, String>> options) {
+    List<Object> allChecked = new LinkedList<Object>();
+    for (Tuple2<Object, String> option : asJavaIterable(options)) {
+      allChecked.add(option._1());
+    }
+    return checkbox(name, collectionAsScalaIterable(allChecked), options);
+  }
+
+  public scala.collection.Iterable<Object> checkbox(String name,
+      scala.collection.Iterable<Object> defaultChecked,
+      scala.collection.Iterable<Tuple2<Object, String>> options) {
+    return collectionAsScalaIterable(gui.checkbox(name, asJavaCollection(defaultChecked),
+      tuplesToParamOptions(options)));
+  }
+
+  private ParamOption[] tuplesToParamOptions(
+      scala.collection.Iterable<Tuple2<Object, String>> options) {
     int n = options.size();
     ParamOption[] paramOptions = new ParamOption[n];
     Iterator<Tuple2<Object, String>> it = asJavaIterable(options).iterator();
@@ -100,7 +117,7 @@ public class ZeppelinContext {
       paramOptions[i++] = new ParamOption(valueAndDisplayValue._1(), valueAndDisplayValue._2());
     }
 
-    return gui.select(name, defaultValue, paramOptions);
+    return paramOptions;
   }
 
   public void setGui(GUI o) {
@@ -203,16 +220,14 @@ public class ZeppelinContext {
       throw new InterpreterException(e);
     }
 
-    String msg = null;
+    StringBuilder msg = new StringBuilder();
+    msg.append("%table ");
     for (Attribute col : columns) {
-      if (msg == null) {
-        msg = col.name();
-      } else {
-        msg += "\t" + col.name();
-      }
+      msg.append(col.name() + "\t");
     }
-
-    msg += "\n";
+    String trim = msg.toString().trim();
+    msg = new StringBuilder(trim);
+    msg.append("\n");
 
     // ArrayType, BinaryType, BooleanType, ByteType, DecimalType, DoubleType, DynamicType,
     // FloatType, FractionalType, IntegerType, IntegralType, LongType, MapType, NativeType,
@@ -226,15 +241,15 @@ public class ZeppelinContext {
 
         for (int i = 0; i < columns.size(); i++) {
           if (!(Boolean) isNullAt.invoke(row, i)) {
-            msg += apply.invoke(row, i).toString();
+            msg.append(apply.invoke(row, i).toString());
           } else {
-            msg += "null";
+            msg.append("null");
           }
           if (i != columns.size() - 1) {
-            msg += "\t";
+            msg.append("\t");
           }
         }
-        msg += "\n";
+        msg.append("\n");
       }
     } catch (NoSuchMethodException | SecurityException | IllegalAccessException
         | IllegalArgumentException | InvocationTargetException e) {
@@ -242,10 +257,10 @@ public class ZeppelinContext {
     }
 
     if (rows.length > maxResult) {
-      msg += "\n<font color=red>Results are limited by " + maxResult + ".</font>";
+      msg.append("\n<font color=red>Results are limited by " + maxResult + ".</font>");
     }
     sc.clearJobGroup();
-    return "%table " + msg;
+    return msg.toString();
   }
 
   /**
@@ -356,7 +371,11 @@ public class ZeppelinContext {
     AngularObjectRegistry registry = interpreterContext.getAngularObjectRegistry();
     String noteId = interpreterContext.getNoteId();
     // try get local object
-    AngularObject ao = registry.get(name, interpreterContext.getNoteId(), null);
+    AngularObject paragraphAo = registry.get(name, noteId, interpreterContext.getParagraphId());
+    AngularObject noteAo = registry.get(name, noteId, null);
+
+    AngularObject ao = paragraphAo != null ? paragraphAo : noteAo;
+
     if (ao == null) {
       // then global object
       ao = registry.get(name, null, null);

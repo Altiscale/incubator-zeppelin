@@ -94,15 +94,13 @@ public class InterpreterRestApi {
           NewInterpreterSettingRequest.class);
       Properties p = new Properties();
       p.putAll(request.getProperties());
-      // Option is deprecated from API, always use remote = true
-      InterpreterGroup interpreterGroup = interpreterFactory.add(request.getName(),
+      InterpreterSetting interpreterSetting = interpreterFactory.add(request.getName(),
           request.getGroup(),
           request.getDependencies(),
-          new InterpreterOption(true),
+          request.getOption(),
           p);
-      InterpreterSetting setting = interpreterFactory.get(interpreterGroup.getId());
-      logger.info("new setting created with {}", setting.id());
-      return new JsonResponse(Status.CREATED, "", setting).build();
+      logger.info("new setting created with {}", interpreterSetting.id());
+      return new JsonResponse(Status.CREATED, "", interpreterSetting).build();
     } catch (InterpreterException e) {
       logger.error("Exception in InterpreterRestApi while creating ", e);
       return new JsonResponse(
@@ -126,9 +124,8 @@ public class InterpreterRestApi {
     try {
       UpdateInterpreterSettingRequest request = gson.fromJson(message,
           UpdateInterpreterSettingRequest.class);
-      // Option is deprecated from API, always use remote = true
       interpreterFactory.setPropertyAndRestart(settingId,
-          new InterpreterOption(true),
+          request.getOption(),
           request.getProperties(),
           request.getDependencies());
     } catch (InterpreterException e) {

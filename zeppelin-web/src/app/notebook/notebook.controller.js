@@ -154,6 +154,21 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
     });
   };
 
+  // checkpoint/commit notebook
+  $scope.checkpointNotebook = function(commitMessage) {
+    BootstrapDialog.confirm({
+      closable: true,
+      title: '',
+      message: 'Commit notebook to current repository?',
+      callback: function(result) {
+        if (result) {
+          websocketMsgSrv.checkpointNotebook($routeParams.noteId, commitMessage);
+        }
+      }
+    });
+    document.getElementById('note.checkpoint.message').value='';
+  };
+
   $scope.runNote = function() {
     BootstrapDialog.confirm({
       closable: true,
@@ -473,7 +488,9 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
           paragraphToBeFocused = note.paragraphs[index].id;
           break;
         }
-        $scope.$broadcast('updateParagraph', {paragraph: note.paragraphs[index]});
+        $scope.$broadcast('updateParagraph', {
+          note: $scope.note, // pass the note object to paragraph scope
+          paragraph: note.paragraphs[index]});
       }
     }
 
@@ -482,7 +499,9 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
       for (var idx in newParagraphIds) {
         var newEntry = note.paragraphs[idx];
         if (oldParagraphIds[idx] === newParagraphIds[idx]) {
-          $scope.$broadcast('updateParagraph', {paragraph: newEntry});
+          $scope.$broadcast('updateParagraph', {
+            note: $scope.note, // pass the note object to paragraph scope
+            paragraph: newEntry});
         } else {
           // move paragraph
           var oldIdx = oldParagraphIds.indexOf(newParagraphIds[idx]);
@@ -617,6 +636,87 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
     }
   };
 
+  var getPermissions = function(callback) {
+    $http.get(baseUrlSrv.getRestApiBase()+ '/notebook/' +$scope.note.id + '/permissions').
+    success(function(data, status, headers, config) {
+      $scope.permissions = data.body;
+      $scope.permissionsOrig = angular.copy($scope.permissions); // to check dirty
+      if (callback) {
+        callback();
+      }
+    }).
+    error(function(data, status, headers, config) {
+      if (status !== 0) {
+        console.log('Error %o %o', status, data.message);
+      }
+    });
+  };
+
+  $scope.openPermissions = function() {
+    $scope.showPermissions = true;
+    getPermissions();
+  };
+
+
+  $scope.closePermissions = function() {
+    if (isPermissionsDirty()) {
+      BootstrapDialog.confirm({
+        closable: true,
+        title: '',
+        message: 'Changes will be discarded.',
+        callback: function(result) {
+          if (result) {
+            $scope.$apply(function() {
+              $scope.showPermissions = false;
+            });
+          }
+        }
+      });
+    } else {
+      $scope.showPermissions = false;
+    }
+  };
+
+  $scope.savePermissions = function() {
+    $http.put(baseUrlSrv.getRestApiBase() + '/notebook/' +$scope.note.id + '/permissions',
+      $scope.permissions, {withCredentials: true}).
+    success(function(data, status, headers, config) {
+      console.log('Note permissions %o saved', $scope.permissions);
+      $scope.showPermissions = false;
+    }).
+    error(function(data, status, headers, config) {
+      console.log('Error %o %o', status, data.message);
+      BootstrapDialog.show({
+          closable: true,
+          title: 'Insufficient privileges', 
+          message: data.message,
+          buttons: [{
+              label: 'Login',
+              action: function(dialog) {
+                  dialog.close();
+                  angular.element('#loginModal').modal({
+                     show: 'true'
+                    });
+              }
+          }, {
+              label: 'Cancel',
+              action: function(dialog){
+                  dialog.close();
+              }
+          }]
+      });
+    });
+  };
+
+  $scope.togglePermissions = function() {
+    if ($scope.showPermissions) {
+      $scope.closePermissions();
+    } else {
+      $scope.openPermissions();
+    }
+  };
+
+
   var isSettingDirty = function() {
     if (angular.equals($scope.interpreterBindings, $scope.interpreterBindingsOrig)) {
       return false;
@@ -624,4 +724,13 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
       return true;
     }
   };
+
+  var isPermissionsDirty = function() {
+    if (angular.equals($scope.permissions, $scope.permissionsOrig)) {
+      return false;
+    } else {
+      return true;
+    }
+  };
+
 });
